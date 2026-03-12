@@ -1,0 +1,6 @@
+services:
+  - type: worker
+    name: facebook-discord-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python fb_bot.py
