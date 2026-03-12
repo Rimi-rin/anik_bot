@@ -1,4 +1,3 @@
-import os
 import requests
 import time
 from bs4 import BeautifulSoup
@@ -7,7 +6,7 @@ import threading
 
 # ---------- CONFIG ----------
 FACEBOOK_PAGE = "https://m.facebook.com/leizlann.francisco"
-WEBHOOK_URL = os.getenv("WEBHOOK")  # Set in Replit secrets
+WEBHOOK_URL = "https://discord.com/api/webhooks/1481594202583466004/EqTx7cemODf2Lr3S0zh1nsljx2niKcwePX11mkg8huta5LRM-GreuENtQ5NfQpCW5tdY"
 CHECK_INTERVAL = 20  # seconds between checks
 # ----------------------------
 
