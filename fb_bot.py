@@ -1,32 +1,43 @@
+import os
 import requests
 import time
 from bs4 import BeautifulSoup
+from flask import Flask
+import threading
 
-# Facebook page URL (mobile version for easier scraping)
+# ---------- CONFIG ----------
 FACEBOOK_PAGE = "https://m.facebook.com/leizlann.francisco"
+WEBHOOK_URL = os.getenv("WEBHOOK")  # Set in Replit secrets
+CHECK_INTERVAL = 20  # seconds between checks
+# ----------------------------
 
-# Discord webhook URL (exposed)
-WEBHOOK_URL = "https://discord.com/api/webhooks/1481594202583466004/EqTx7cemODf2Lr3S0zh1nsljx2niKcwePX11mkg8huta5LRM-GreuENtQ5NfQpCW5tdY"
+headers = {"User-Agent": "Mozilla/5.0"}
+last_post = None  # Tracks last detected post
 
-# Headers to mimic a browser
-headers = {
-    "User-Agent": "Mozilla/5.0"
-}
+# ---------- FLASK KEEP-ALIVE ----------
+app = Flask('')
 
-last_post = None  # Tracks the last detected post
+@app.route('/')
+def home():
+    return "Bot is running!"
 
+def run_flask():
+    app.run(host='0.0.0.0', port=8080)
+
+# Run Flask server in a separate thread
+threading.Thread(target=run_flask).start()
+# --------------------------------------
 
 def get_latest_post():
-    """Scrapes the Facebook page and returns the latest post URL and text."""
+    """Scrape the Facebook page and return the latest post URL and text."""
     try:
         r = requests.get(FACEBOOK_PAGE, headers=headers, timeout=10)
-        r.raise_for_status()  # Raise error if request fails
+        r.raise_for_status()
     except requests.RequestException as e:
         print("Failed to fetch Facebook page:", e)
         return None, None
 
     soup = BeautifulSoup(r.text, "html.parser")
-
     for link in soup.find_all("a"):
         href = link.get("href")
         if href and "/story.php" in href:
@@ -36,30 +47,23 @@ def get_latest_post():
 
     return None, None
 
-
 def send_to_discord(post_url, text):
-    """Sends the post to Discord via webhook."""
+    """Send a post to Discord via webhook."""
     try:
-        message = {
-            "content": f"📢 **New Facebook Post**\n\n{text}\n\n{post_url}"
-        }
+        message = {"content": f"📢 **New Facebook Post**\n\n{text}\n\n{post_url}"}
         requests.post(WEBHOOK_URL, json=message, timeout=10)
     except requests.RequestException as e:
         print("Failed to send to Discord:", e)
 
-
-# Main loop — runs indefinitely
+# ---------- MAIN LOOP ----------
 while True:
     try:
         post_url, text = get_latest_post()
-
         if post_url and post_url != last_post:
             last_post = post_url
             send_to_discord(post_url, text)
             print("New post detected:", post_url)
-
-        time.sleep(20)  # Check every 20 seconds
-
+        time.sleep(CHECK_INTERVAL)
     except Exception as e:
         print("Unexpected error:", e)
-        time.sleep(60)  # Wait a minute if something unexpected happens
+        time.sleep(60)
